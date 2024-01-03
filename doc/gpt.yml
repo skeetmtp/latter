@@ -1,0 +1,113 @@
+openapi: 3.0.0
+info:
+  title: Manage articles thread API
+  version: 1.0.0
+  description: API for managing articles and comments
+
+servers:
+  - url: https://hnsim.vercel.app
+
+paths:
+  /api/article:
+    post:
+      summary: Create a new article
+      operationId: createArticle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                author:
+                  type: string
+                  example: John Doe
+                link:
+                  type: string
+                  example: https://thume.ca/2023/12/02/tracing-methods/
+                title:
+                  type: string
+                  example: All my favorite tracing tools
+                points:
+                  type: integer
+                  example: 0
+                  description: Ranking in number of points
+              required:
+                - author
+                - link
+                - title
+                - points
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: created item ID
+                    example: abc
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid author
+
+  /api/article/{id}:
+    post:
+      summary: Add a comment to an article or comment
+      operationId: addComment
+      tags:
+        - Comment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the item to add a comment to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                author:
+                  type: string
+                  example: John Doe
+                content:
+                  type: string
+                  example: I agree
+              required:
+                - author
+                - content
+      responses:
+        '200':
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: created item ID
+                    example: abc:123
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid author
