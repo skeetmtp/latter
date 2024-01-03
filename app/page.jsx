@@ -3,211 +3,162 @@ import { kv } from '@vercel/kv'
 import { unstable_noStore as noStore } from 'next/cache';
 import { DateTime } from 'luxon';
 
-// Define your JSON object
-const pageContent = {
-  links: [
-    { href: "#", text: "Hacker News Sim", isBold: true },
-    { href: "#", text: "new" },
-    { href: "#", text: "threads" },
-    { href: "#", text: "past" },
-    { href: "#", text: "comments" },
-    { href: "#", text: "ask" },
-    { href: "#", text: "show" },
-    { href: "#", text: "jobs" },
-    { href: "https://chat.openai.com/g/g-ycNVwVcX9-hnsim", text: "submit" },
-  ],
-  userInfo: {
-    username: 'skeetmtp',
-    points: 18,
-    logoutLink: '#',
+/**
+ * v0 by Vercel.
+ * @see https://v0.dev/t/lxOSKk0NJCX
+ */
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { AvatarImage, Avatar } from "@/components/ui/avatar"
+import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
+
+// JSON Data for the posts
+const postsData = [
+  {
+    id: 1,
+    author: "Clémentine Fourrier",
+    handle: "@clefourrier",
+    time: "3h",
+    message: [
+      "The Open LLM Leaderboard is taking a stronger stance on metadata, via 2 things.",
+      "1) If your model has no model card or license tag, it is now in the 'deleted' category & it won't appear in the main view. A model with no explanation or license is not useful to the community."
+    ],
+    avatarUrl: "/placeholder.svg?height=40&width=40"
   },
-  posts: [
-    {
-      title: 'AI my favorite tracing tools',
-      link: '#',
-      description: ' (trishume.ca)',
-      info: '126 points by johnDoe 6 hours ago',
-      actions: [
-        { text: 'hide', link: '#' },
-        { text: 'past', link: '#' },
-        { text: 'favorite', link: '#' },
-        { text: '13 comments', link: '#' },
-      ],
-    },
-    {
-      title: 'AI my favorite tracing tools',
-      link: '#',
-      description: ' (trishume.ca)',
-      info: '126 points by johnDoe 6 hours ago',
-      actions: [
-        { text: 'hide', link: '#' },
-        { text: 'past', link: '#' },
-        { text: 'favorite', link: '#' },
-        { text: '13 comments', link: '#' },
-      ],
-    },
-    {
-      title: 'AI my favorite tracing tools',
-      link: '#',
-      description: ' (trishume.ca)',
-      info: '126 points by johnDoe 6 hours ago',
-      actions: [
-        { text: 'hide', link: '#' },
-        { text: 'past', link: '#' },
-        { text: 'favorite', link: '#' },
-        { text: '13 comments', link: '#' },
-      ],
-    },
-    // Add other posts similarly
-  ],
-
-};
-
-async function getArticles () {
-  noStore();
-  const maxLoop = 10;
-  const result = [];
-
-  const articles = await kv.zrange('articles', 0, maxLoop, {rev: true, withScores: true});
-  //ex [ 'abc', 1702999636500, 'efg', 1702999662414 ]
-  console.log("articles", articles);
-  for(let i = 0; i < articles.length; i += 2) {
-    const id = articles[i];
-    const score = articles[i + 1];
-    const key = `article:${id}`;
-    const article = await kv.get(key);
-    result.push({key, score, value: article});
-  }
-
-  /*
-  let loop = 0;
-  let cursor = 0;
-  const match = `article:*`;
-  while(loop < maxLoop) {
-    const [nextCursor, data] = await kv.scan(cursor, {match});
-    console.log("loop", {match, loop, cursor, nextCursor, data});
-    cursor = nextCursor;
-    for(const key of data){
-      console.log('key', {key});
-      const value = await kv.get(key);
-      result.push({key, value});
-    }
-    loop++;
-    if (cursor === 0) {
-      break;
-    }
-  }
-  */
-  console.log("result", result);
-
-  for(const item of result) {
-    console.log("item", item);
-    const id = item.key.split(':')[1];
-    const commentsCount = await kv.get(`article-comments-count:${id}`);
-    item.value.commentsCount = commentsCount;
-  }
-
-  const res = result.map((item) => {
-    // Get domain from link (only apex domain)
-    let domain = '(N/A)';
-    const link = item.value.link;
-    let match = link.match(/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n]+)/im);
-    if (match) {
-      let parts = match[1].split('.');
-      if (parts.length > 2) {
-        domain = parts.slice(-2).join('.');
-      } else {
-        domain = match[1];
-      }
-    }
-    const commentsLink = `/article/${item.key.split(':')[1]}`;
-    const commentsCount = item.value.commentsCount || 0;
-    const createdAt = new Date(item.value.createdAt);
-    const agoString = DateTime.fromJSDate(createdAt).toRelative();
-
-    return {
-      key: item.key,
-      value: {
-        title: item.value.title || "N/A",
-        link: item.value.link || "#",
-        description: domain,
-        createdAt: item.value.createdAt,
-        info: `${item.value.points || 14} points by ${item.value.author} ${agoString}`,
-        actions: [
-          { text: 'hide', link: '#' },
-          { text: 'past', link: '#' },
-          { text: 'favorite', link: '#' },
-          { text: `${commentsCount} comments`, link: commentsLink },
-        ],
-      },
-    };
-  });
-
-  console.log("res", res);
-  return res;
-}
+  {
+    id: 1,
+    author: "John Doe",
+    handle: "@johndo",
+    time: "1h",
+    message: [
+      "foobar.",
+      "lol"    ],
+    avatarUrl: "/placeholder.svg?height=40&width=40"
+  },
+  // Add more posts here as needed
+];
 
 
-const Link = ({ href, children }) => {
+export default function Component() {
   return (
-    <a href={href}>{children}</a>
-  );
-};
-
-export default async function Home() {
-  const articles = await getArticles();
-  return (
-    <div className="bg-[#f6f6ef] text-black text-sm font-sans h-screen flex flex-col">
-      {/* Render links from JSON */}
-      <div className="flex justify-between items-center px-4 py-2 border-b bg-[#ff6600]">
-        <div className="flex space-x-2">
-          {pageContent.links.map((link, index) => (
-            <React.Fragment key={index}>
-              <Link className="text-black hover:text-[#ff6600] hover:bg-white" href={link.href}>
-                {link.isBold ? <b>{link.text}</b> : link.text}
-              </Link>
-              {index < pageContent.links.length - 1 && <span>|</span>}
-            </React.Fragment>
-          ))}
-        </div>
-        <div className="flex items-center">
-          <Link className="text-black hover:text-[#ff6600] hover:bg-white" href={pageContent.userInfo.logoutLink}>
-            {pageContent.userInfo.username} ({pageContent.userInfo.points})
-          </Link>
-          <span>|</span>
-          <Link className="text-black hover:text-[#ff6600] hover:bg-white" href="#">
-            logout
-          </Link>
-        </div>
-      </div>
-
-      {/* Render posts from JSON */}
-      <div className="px-4 py-2">
-        {articles.map((article, index) => {
-          const post = article.value;
-          return (
-          <div key={index} className="mb-4 space-y-2">
-            <Link className="text-black hover:underline" href={post.link}>
-              {post.title}
-            </Link>
-            <span className="text-gray-600">({post.description})</span>
-            <div className="text-gray-600 text-xs">
-              {post.info} {' | '}
-              {post.actions.map((action, actionIndex) => (
-                <React.Fragment key={actionIndex}>
-                  <Link className="text-black hover:underline" href={action.link}>
-                    {action.text}
-                  </Link>
-                  {actionIndex < post.actions.length - 1 && ' | '}
-                </React.Fragment>
-              ))}
-            </div>
+    <div className="bg-white">
+      <nav className="flex flex-row space-x-1 p-4 bg-gray-100">
+        <Button className="mt-4 w-full">Post</Button>
+      </nav>
+      <div className="flex h-screen">
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {postsData.map((post) => (
+              <Card className="w-full" key={post.id}>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Avatar>
+                      <AvatarImage alt="User avatar" src={post.avatarUrl} />
+                    </Avatar>
+                    <div>
+                      <CardTitle>{post.author}</CardTitle>
+                      <CardDescription>{post.handle} · {post.time}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {post.message.map((message, index) => (
+                    <p key={index}>{message}</p>
+                  ))}
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <MessageCircleIcon className="text-gray-500" />
+                  <TwitterIcon className="text-gray-500" />
+                  <HeartIcon className="text-gray-500" />
+                  <UploadIcon className="text-gray-500" />
+                </CardFooter>
+              </Card>
+            ))}
           </div>
-        );
-        })}
+        </main>
       </div>
-      {/* Fill remaining vertical space */}
-      <div className="flex-grow"></div>
     </div>
-  );
+  )
 }
+
+function HeartIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    </svg>
+  )
+}
+
+
+function MessageCircleIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z" />
+    </svg>
+  )
+}
+
+
+function TwitterIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+    </svg>
+  )
+}
+
+
+function UploadIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" x2="12" y1="3" y2="15" />
+    </svg>
+  )
+}
+
