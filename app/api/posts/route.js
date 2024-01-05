@@ -3,7 +3,7 @@ import {NextRequest, NextResponse} from "next/server";
 
 
 /*
-curl -X POST http://localhost:3000/api/article -H 'openai-conversation-id: abc' \
+curl -X POST http://localhost:3000/api/posts -H 'openai-conversation-id: abc' \
 -H "Content-Type: application/json" -d \
 '{"author": "John Doe", "message": "All my favorite tracing tools"}'
 */
