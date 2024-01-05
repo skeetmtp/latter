@@ -38,17 +38,59 @@ const postsData = [
   // Add more posts here as needed
 ];
 
+async function getPosts () {
+  noStore();
+  const maxLoop = 10;
+  const result = [];
 
-export default function Component() {
+  const posts = await kv.zrange('latter:posts', 0, maxLoop, {rev: true, withScores: true});
+  //ex [ 'abc', 1702999636500, 'efg', 1702999662414 ]
+  console.log("posts", posts);
+  for(let i = 0; i < posts.length; i += 2) {
+    const id = posts[i];
+    const score = posts[i + 1];
+    const key = `latter:post:${id}`;
+    const article = await kv.get(key);
+    result.push({key, score, value: article});
+  }
+
+  console.log("result", result);
+
+  const res = result.map((item) => {
+    const createdAt = new Date(item.value.createdAt);
+    const agoString = DateTime.fromJSDate(createdAt).toRelative();
+
+    return   {
+      id: item.key,
+      avatarUrl: "/placeholder.svg?height=40&width=40",
+      author: item.value.author,
+      handle: item.value.handle,
+      time: agoString,
+      message: [item.value.message],
+    };
+
+  });
+
+  console.log("res", res);
+  // return postsData;
+  return res;
+}
+
+
+export default async function Component() {
+  const posts = await getPosts();
+
   return (
     <div className="bg-white">
       <nav className="flex flex-row space-x-1 p-4 bg-gray-100">
-        <Button className="mt-4 w-full">Post</Button>
+        <a className="mt-4 w-full" href="https://chat.openai.com/g/g-qIStnYQmw-latter" target="_blank" rel="noopener noreferrer">
+          <Button className="mt-4 w-full">Post</Button>
+        </a>
       </nav>
       <div className="flex h-screen">
         <main className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            {postsData.map((post) => (
+            {posts.map((post) => (
               <Card className="w-full" key={post.id}>
                 <CardHeader>
                   <div className="flex items-center space-x-2">
