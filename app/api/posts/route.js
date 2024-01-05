@@ -3,6 +3,24 @@ import {NextRequest, NextResponse} from "next/server";
 
 
 /*
+curl -X DELETE http://localhost:3000/api/posts
+*/
+export async function DELETE(request){
+  const apiKey = request.headers.get('x-api-key');
+  if(process.env.API_KEY && apiKey !== process.env.API_KEY){
+    return NextResponse.json({ error: "not authenticated" }, { status: 401 });
+  }
+
+  await kv.del("latter:posts");
+
+  const keys = await kv.keys("latter:post:*");
+  keys.forEach(async (key) => {
+    await kv.del(key);
+  });
+  return NextResponse.json({}, { status: 200 });
+}
+
+/*
 curl -X POST http://localhost:3000/api/posts -H 'openai-conversation-id: abc' \
 -H "Content-Type: application/json" -d \
 '{"author": "John Doe", "message": "All my favorite tracing tools"}'
@@ -11,6 +29,11 @@ curl -X POST http://localhost:3000/api/posts -H 'openai-conversation-id: abc' \
 export async function POST(request) {
   const body = await request.json();
   const id = request.headers.get('openai-conversation-id');
+  const apiKey = request.headers.get('x-api-key');
+
+  if(process.env.API_KEY && apiKey !== process.env.API_KEY){
+    return NextResponse.json({ error: "not authenticated" }, { status: 401 });
+  }
 
   if (!body.author || typeof body.author !== 'string') {
     return new Response(JSON.stringify({ error: 'Invalid author' }), {

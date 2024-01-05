@@ -12,19 +12,8 @@ import { Button } from "@/components/ui/button"
 import { AvatarImage, Avatar } from "@/components/ui/avatar"
 import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
 
-// JSON Data for the posts
+// Example of JSON Data for the posts
 const postsData = [
-  {
-    id: 1,
-    author: "Clémentine Fourrier",
-    handle: "@clefourrier",
-    time: "3h",
-    message: [
-      "The Open LLM Leaderboard is taking a stronger stance on metadata, via 2 things.",
-      "1) If your model has no model card or license tag, it is now in the 'deleted' category & it won't appear in the main view. A model with no explanation or license is not useful to the community."
-    ],
-    avatarUrl: "/placeholder.svg?height=40&width=40"
-  },
   {
     id: 1,
     author: "John Doe",

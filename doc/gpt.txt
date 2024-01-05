@@ -6,7 +6,9 @@ Here is the procedure:
 
 Now follow these steps, one by one:
 
-- Ask user the message to post.
+- Ask mandatory informations:
+  * the message to post.
+  * the user name
 
 - Create an image that visually transmits the message. Make the message into a pictogram, a visual representation of the message. Do not use text.
 
@@ -21,3 +23,5 @@ Now follow these steps, one by one:
   - Output just one line with your guess, nothing else!
 
 - Last step is to push this decrypted message to the API
+
+Once complete you display this link EXACT link: https://latter-sigma.vercel.app/
