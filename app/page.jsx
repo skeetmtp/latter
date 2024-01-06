@@ -1,116 +1,12 @@
-import React from 'react';
-import { kv } from '@vercel/kv'
-import { unstable_noStore as noStore } from 'next/cache';
-import { DateTime } from 'luxon';
+"use client";
 
-/**
- * v0 by Vercel.
- * @see https://v0.dev/t/lxOSKk0NJCX
- */
-import Link from "next/link"
+import React from 'react';
+import { QueryClient, QueryClientProvider, useQuery } from 'react-query';
+
 import { Button } from "@/components/ui/button"
 import { AvatarImage, Avatar } from "@/components/ui/avatar"
 import { CardTitle, CardDescription, CardHeader, CardContent, CardFooter, Card } from "@/components/ui/card"
 
-// Example of JSON Data for the posts
-const postsData = [
-  {
-    id: 1,
-    author: "John Doe",
-    handle: "@johndo",
-    time: "1h",
-    message: [
-      "foobar.",
-      "lol"    ],
-    avatarUrl: "/placeholder.svg?height=40&width=40"
-  },
-  // Add more posts here as needed
-];
-
-async function getPosts () {
-  noStore();
-  const maxLoop = 10;
-  const result = [];
-
-  const posts = await kv.zrange('latter:posts', 0, maxLoop, {rev: true, withScores: true});
-  //ex [ 'abc', 1702999636500, 'efg', 1702999662414 ]
-  console.log("posts", posts);
-  for(let i = 0; i < posts.length; i += 2) {
-    const id = posts[i];
-    const score = posts[i + 1];
-    const key = `latter:post:${id}`;
-    const article = await kv.get(key);
-    result.push({key, score, value: article});
-  }
-
-  console.log("result", result);
-
-  const res = result.map((item) => {
-    const createdAt = new Date(item.value.createdAt);
-    const agoString = DateTime.fromJSDate(createdAt).toRelative();
-
-    return   {
-      id: item.key,
-      avatarUrl: "/placeholder.svg?height=40&width=40",
-      author: item.value.author,
-      handle: item.value.handle,
-      time: agoString,
-      message: [item.value.message],
-    };
-
-  });
-
-  console.log("res", res);
-  // return postsData;
-  return res;
-}
-
-
-export default async function Component() {
-  const posts = await getPosts();
-
-  return (
-    <div className="bg-white">
-      <nav className="flex flex-row space-x-1 p-4 bg-gray-100">
-        <a className="mt-4 w-full" href="https://chat.openai.com/g/g-qIStnYQmw-latter" target="_blank" rel="noopener noreferrer">
-          <Button className="mt-4 w-full">Post</Button>
-        </a>
-      </nav>
-      <div className="flex h-screen">
-        <main className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <Card className="w-full" key={post.id}>
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <Avatar>
-                      <AvatarImage alt="User avatar" src={post.avatarUrl} />
-                    </Avatar>
-                    <div>
-                      <CardTitle>{post.author}</CardTitle>
-                      <CardDescription>{post.handle} · {post.time}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {post.message.map((message, index) => (
-                    <p key={index}>{message}</p>
-                  ))}
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <MessageCircleIcon className="text-gray-500" />
-                  <TwitterIcon className="text-gray-500" />
-                  <HeartIcon className="text-gray-500" />
-                  <UploadIcon className="text-gray-500" />
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </main>
-      </div>
-    </div>
-  )
-}
 
 function HeartIcon(props) {
   return (
@@ -193,3 +89,72 @@ function UploadIcon(props) {
   )
 }
 
+const queryClient = new QueryClient();
+
+export default function Home() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PostsComponent />
+    </QueryClientProvider>
+  );
+}
+
+function PostsComponent() {
+  // Use React Query's useQuery hook to fetch posts
+  const { data, isLoading, error } = useQuery('posts', fetchPosts);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>An error has occurred: {error.message}</div>;
+
+  const posts = data.posts;
+
+  return (
+    <div className="bg-white">
+      <nav className="flex flex-row space-x-1 p-4 bg-gray-100">
+        <a className="mt-4 w-full" href="https://chat.openai.com/g/g-qIStnYQmw-latter" target="_blank" rel="noopener noreferrer">
+          <Button className="mt-4 w-full">Post</Button>
+        </a>
+      </nav>
+      <div className="flex h-screen">
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <Card className="w-full" key={post.id}>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Avatar>
+                      <AvatarImage alt="User avatar" src={post.avatarUrl} />
+                    </Avatar>
+                    <div>
+                      <CardTitle>{post.author}</CardTitle>
+                      <CardDescription>{post.handle} · {post.time}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {post.message.map((message, index) => (
+                    <p key={index}>{message}</p>
+                  ))}
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <MessageCircleIcon className="text-gray-500" />
+                  <TwitterIcon className="text-gray-500" />
+                  <HeartIcon className="text-gray-500" />
+                  <UploadIcon className="text-gray-500" />
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+async function fetchPosts() {
+  const response = await fetch('/api/posts');
+  if (!response.ok) {
+    throw new Error('Network response was not ok', response);
+  }
+  return response.json();
+}
